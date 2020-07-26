@@ -1,6 +1,6 @@
 # Tetris Clone
 
-So I watched a [video](), and felt the need to go build something. This isn't done, it isn't for use for anyone but me, and I'm having fun :D
+So I watched a [video](https://www.youtube.com/watch?v=QOJfyp0KMmM), and felt the need to go build something. This isn't done, it isn't for use for anyone but me, and I'm having fun :D
 
 
 ### Running
