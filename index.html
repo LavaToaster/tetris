@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Tetris Clone</title>
+
+    <style>
+        body {
+            margin: 0;
+        }
+
+        test {
+          background: rgb(231, 105, 81);
+          background: rgb(38, 70, 83);
+          background: rgb(233, 196, 106);
+          background: rgb(33, 157, 143);
+
+          background: rgb(255, 0, 0);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        #root {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        #root > canvas {
+            position: absolute;
+        }
+
+        #game-layer { z-index: 2; }
+        #background-layer { z-index: 1; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script src="src/index.ts" type="application/javascript"></script>
+</body>
+</html>
