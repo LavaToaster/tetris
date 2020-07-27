@@ -3,6 +3,7 @@ import { EntityDefinition } from './entityDefinitions';
 import { Block } from './block';
 import { BLOCK_SIZE } from '../consts';
 import type { Engine } from '../engine';
+import { randomInt } from '../util';
 
 export enum EntityMove {
   Left,
@@ -18,15 +19,18 @@ export enum EntityMoveResult {
 }
 
 export class Entity {
-  private blocks: Block[];
+  public blocks: Block[];
   public w = 0;
   public h = 0;
+  public id: number;
 
   constructor(
     private engine: Engine,
     private entityDefinition: EntityDefinition,
     public position: p5.Vector,
   ) {
+    this.id = randomInt(0, 100);
+
     this.blocks = entityDefinition.vectors.map((vector) => {
       if (vector.x > this.w) {
         this.w = vector.x;
@@ -36,12 +40,7 @@ export class Entity {
         this.h = vector.y;
       }
 
-      return new Block(
-        engine.gameLayerSketch,
-        this,
-        vector,
-        entityDefinition.color,
-      );
+      return new Block(engine.gameLayerSketch, vector, entityDefinition.color);
     });
 
     this.w++;
@@ -99,40 +98,47 @@ export class Entity {
     // Check within play area
     if (
       newStartPosition.x < 0 ||
-      newEndPosition.x > this.engine.config.playArea.x
+      newEndPosition.x > this.engine.config.playArea.w
     ) {
       // trying to go horizontally out of the play area, no sir, not allowed sir.
       return EntityMoveResult.Invalid;
     }
 
-    if (newStartPosition.y < 0) {
-      return EntityMoveResult.Invalid;
-    }
-
-    if (newEndPosition.y > this.engine.config.playArea.y) {
-      return EntityMoveResult.ReachedBottom;
-    }
-
-    for (let entity of this.engine.entities) {
-      if (entity.collides(newStartPosition, newEndPosition)) {
-        for (let externalBlock of entity.blocks) {
-          for (let internalBlock of this.blocks) {
-            const irv = internalBlock.realVector(newStartPosition);
-            const erv = externalBlock.realVector();
-
-            if (erv.x === irv.x && erv.y === irv.y) {
-              return where === EntityMove.Down
-                ? EntityMoveResult.ReachedBottom
-                : EntityMoveResult.Invalid;
-            }
-          }
-        }
-      }
+    if (!this.canMoveIntoPosition(newStartPosition)) {
+      console.log(this.id);
+      return where === EntityMove.Down
+        ? EntityMoveResult.ReachedBottom
+        : EntityMoveResult.Invalid;
     }
 
     this.position.set(newStartPosition);
 
     return EntityMoveResult.Ok;
+  }
+
+  public canMoveIntoPosition(position: p5.Vector) {
+    // i'm not sure if this is worth it, but this should ensure that
+    //  this function keeps consistent timing regardless of the
+    //  outcome.
+    //
+    // I.E Returning early would actually make block failures faster than
+    //  block successes. Does it matter? I don't know, but lets keep it
+    //  consistent just in case! :)
+    let result = true;
+
+    for (let block of this.blocks) {
+      const bp = block.blockRelativeToPosition(position);
+
+      if (this.engine.blockMatrix[bp.y]?.[bp.x]) {
+        result = false;
+      }
+
+      if (bp.y >= this.engine.config.playArea.h) {
+        result = false;
+      }
+    }
+
+    return result;
   }
 
   public getEndVector(vector: p5.Vector = this.position): p5.Vector {

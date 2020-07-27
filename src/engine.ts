@@ -3,11 +3,12 @@ import { Entity, EntityMove, EntityMoveResult } from './graphics/entity';
 import { entityDefinitions } from './graphics/entityDefinitions';
 import { BLOCK_SIZE } from './consts';
 import { randomInt } from './util';
+import { Block } from './graphics/block';
 
 export interface EngineConfig {
   playArea: {
-    x: number;
-    y: number;
+    w: number;
+    h: number;
   };
 }
 
@@ -30,24 +31,26 @@ export class Engine {
 
   private currentEntity?: Entity;
   public entities: Entity[] = [];
+  public blockMatrix: Block[][] = [];
+  private gameTimer?: number;
 
   constructor(public config: EngineConfig) {
     // const uiMinimumWidth = 704;
     const uiMinimumWidth = 512;
     const uiMinimumHeight = 512;
 
-    const width = uiMinimumWidth + config.playArea.x * BLOCK_SIZE;
-    let height = config.playArea.y * BLOCK_SIZE;
+    const width = uiMinimumWidth + config.playArea.w * BLOCK_SIZE;
+    let height = config.playArea.h * BLOCK_SIZE;
 
     if (height < uiMinimumHeight) {
       height = uiMinimumHeight;
     }
 
-    const playX1 = Math.floor(width / 2 - (config.playArea.x * BLOCK_SIZE) / 2);
+    const playX1 = Math.floor(width / 2 - (config.playArea.w * BLOCK_SIZE) / 2);
     const playX2 = width - playX1;
 
     const playY1 = 0; // Idk, but this is here for maybe future use?
-    const playY2 = config.playArea.y * BLOCK_SIZE;
+    const playY2 = config.playArea.h * BLOCK_SIZE;
 
     this.bounds = {
       width,
@@ -57,6 +60,8 @@ export class Engine {
       playY1,
       playY2,
     };
+
+    this.tick = this.tick.bind(this);
 
     this.backgroundLayerSketch = new p5(this.createBackgroundLayer);
     this.gameLayerSketch = new p5(this.createGameLayer);
@@ -68,26 +73,41 @@ export class Engine {
       canvas.parent('#root');
       canvas.id('game-layer');
 
-      this.createNewEntity();
+      this.spawnEntity();
     };
 
     p.draw = () => {
       p.clear();
       p.translate(this.bounds.playX1, 0);
 
-      if (this.currentEntity) {
-        this.currentEntity.draw();
+      for (let row of this.blockMatrix) {
+        for (let block of row ?? []) {
+          block?.draw();
+        }
       }
 
-      for (let entity of this.entities) {
-        entity.draw();
+      if (this.currentEntity) {
+        this.currentEntity.draw();
       }
     };
   };
 
-  createNewEntity() {
+  spawnEntity() {
     if (this.currentEntity) {
-      this.entities.push(this.currentEntity);
+      for (let block of this.currentEntity.blocks) {
+        const vector = block.blockRelativeToPosition(
+          this.currentEntity.position,
+        );
+        block.position.set(vector);
+
+        if (!this.blockMatrix[vector.y]) {
+          this.blockMatrix[vector.y] = [];
+        }
+
+        this.blockMatrix[vector.y][vector.x] = block;
+      }
+
+      console.log(this.blockMatrix);
     }
 
     const entity = new Entity(
@@ -96,7 +116,8 @@ export class Engine {
       this.gameLayerSketch.createVector(0, 0),
     );
 
-    entity.position.x = randomInt(0, this.config.playArea.x - entity.w);
+    entity.position.y = entity.h * -1;
+    entity.position.x = randomInt(0, this.config.playArea.w - entity.w);
 
     this.currentEntity = entity;
   }
@@ -121,13 +142,13 @@ export class Engine {
       p.strokeWeight(1);
 
       // vertical lines
-      for (let i = 0; i <= this.config.playArea.x; i++) {
+      for (let i = 0; i <= this.config.playArea.w; i++) {
         const position = i * BLOCK_SIZE + this.bounds.playX1;
         p.line(position, this.bounds.playY1, position, this.bounds.playY2);
       }
 
       // horizontal lines
-      for (let j = 0; j < this.config.playArea.y + 1; j++) {
+      for (let j = 0; j < this.config.playArea.h + 1; j++) {
         p.line(
           this.bounds.playX1,
           j * BLOCK_SIZE,
@@ -140,7 +161,7 @@ export class Engine {
 
   run() {
     this.bindKeyboardListeners();
-    window.setInterval(this.tick, 200);
+    this.gameTimer = window.setInterval(this.tick, 200);
   }
 
   bindKeyboardListeners() {
@@ -168,28 +189,59 @@ export class Engine {
       }
 
       if (e.code === 'Space') {
-        this.createNewEntity();
+        this.spawnEntity();
       }
     });
   }
 
-  tick = () => {
+  tick() {
     this.moveActive(EntityMove.Down);
     this.keepAlive = false;
+    let moveDown = 0;
+
+    for (let idx = this.config.playArea.h - 1; idx >= 0; idx--) {
+      let row = this.blockMatrix[idx];
+      let blocks = row?.filter((i) => Boolean(i)) ?? [];
+
+      if (moveDown > 0 && blocks.length > 0) {
+        for (let block of blocks) {
+          block.moveDown(this.blockMatrix, moveDown);
+        }
+
+        console.log('moving time', moveDown);
+
+        idx = idx + moveDown;
+        row = this.blockMatrix[idx];
+        blocks = row?.filter((i) => Boolean(i)) ?? [];
+      }
+
+      // we have a hit?
+      if (blocks.length === this.config.playArea.w) {
+        this.blockMatrix[idx].length = 0;
+        this.blockMatrix[idx].length = this.config.playArea.w;
+        moveDown++;
+      }
+    }
 
     // for (let entity of this.entities) {
     //   entity.move(EntityMove.Down);
     // }
-  };
+  }
 
   moveActive(where: EntityMove) {
     let result = this.currentEntity!.move(where);
 
     if (result === EntityMoveResult.ReachedBottom && !this.keepAlive) {
-      this.createNewEntity();
-    }
+      if (this.currentEntity!.position.y < 0) {
+        console.log(this.blockMatrix, this.currentEntity?.position);
 
-    // console.log(result);
+        window.clearInterval(this.gameTimer);
+        window.alert('Ya dead!');
+        return;
+      }
+
+      this.spawnEntity();
+    }
   }
 
   getRandomEntityDefinition() {

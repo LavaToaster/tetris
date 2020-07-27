@@ -1,6 +1,5 @@
 import p5 from 'p5';
 import { BLOCK_SIZE } from '../consts';
-import type { Entity } from './entity';
 import { randomInt } from '../util';
 
 export class Block {
@@ -8,8 +7,7 @@ export class Block {
 
   constructor(
     private p: p5,
-    private entity: Entity,
-    private position: p5.Vector,
+    public position: p5.Vector,
     private color: p5.Color,
   ) {
     this.id = randomInt(0, 100);
@@ -29,21 +27,30 @@ export class Block {
       BLOCK_SIZE,
     );
 
-    p.fill(255);
-    p.text(
-      this.id,
-      this.position.x * BLOCK_SIZE + p.textSize(),
-      this.position.y * BLOCK_SIZE + p.textSize(),
-    );
+    // p.fill(255);
+    // p.text(
+    //   this.id,
+    //   this.position.x * BLOCK_SIZE + p.textSize(),
+    //   this.position.y * BLOCK_SIZE + p.textSize(),
+    // );
 
     p.pop();
   }
 
-  public realVector(entityPosition: p5.Vector = this.entity.position) {
-    const entityPositionX = entityPosition.x * BLOCK_SIZE;
-    const entityPositionY = entityPosition.y * BLOCK_SIZE;
-    const blockPositionX = this.position.x * BLOCK_SIZE;
-    const blockPositionY = this.position.y * BLOCK_SIZE;
+  public moveDown(blockMatrix: Block[][], amount: number) {
+    const previousY = this.position.y;
+
+    this.position.y += amount;
+
+    delete blockMatrix[previousY][this.position.x];
+    blockMatrix[this.position.y][this.position.x] = this;
+  }
+
+  public blockRelativeToPosition(entityPosition: p5.Vector) {
+    const entityPositionX = entityPosition.x;
+    const entityPositionY = entityPosition.y;
+    const blockPositionX = this.position.x;
+    const blockPositionY = this.position.y;
 
     return this.p.createVector(
       entityPositionX + blockPositionX,

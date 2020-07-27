@@ -2,8 +2,8 @@ import { Engine, EngineConfig } from './engine';
 
 const config: EngineConfig = {
   playArea: {
-    x: 10,
-    y: 20,
+    w: 10,
+    h: 20,
   },
 };
 

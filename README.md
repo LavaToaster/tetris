@@ -24,8 +24,10 @@ parcel index.html
 - [ ] Rotate Pieces
   - [ ] Wall Kick Rotation
 - [x] Spawn piece one it reaches the "bottom"
-- [ ] Reset game once a piece spawns and collides with another one
+- [x] Spawn piece outside of game area so that it naturally uses object collision
+- [ ] Line clearing
 - [ ] Hold piece
+- [ ] Score system
 - [ ] Replay system
     - Once I've worked out what the hell I'm doing it should be fairly trivial
       to convert what I have into an event sourced system, where I can store

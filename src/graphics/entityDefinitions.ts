@@ -72,6 +72,12 @@ export const entityDefinitions: {
     rotationVector: p.createVector(0.5, 1.5),
   }),
 
+  // wideBoiShape: (p) => ({
+  //   color: p.color(colors.lightBlue),
+  //   vectors: makeWideBoiVectors(p),
+  //   rotationVector: p.createVector(0.5, 1.5),
+  // }),
+
   zShape: (p) => ({
     color: p.color(colors.red),
     vectors: [
@@ -105,3 +111,19 @@ export const entityDefinitions: {
     rotationVector: p.createVector(1, 1),
   }),
 };
+
+function makeWideBoiVectors(p: p5) {
+  const vectors: p5.Vector[] = [];
+
+  for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < 4; y++) {
+      if (y < 2 && (x < 4 || x > 5)) {
+        continue;
+      }
+
+      vectors.push(p.createVector(x, y));
+    }
+  }
+
+  return vectors;
+}
